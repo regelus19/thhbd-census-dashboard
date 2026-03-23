@@ -1,0 +1,1378 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>THHBD Inpatient Census Projection and Daily Case Volume</title>
+<link href="https://fonts.googleapis.com/css2?family=DM+Sans:wght@300;400;500;600&family=DM+Mono:wght@400;500&display=swap" rel="stylesheet">
+<script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/4.4.1/chart.umd.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/chartjs-plugin-datalabels@2.2.0/dist/chartjs-plugin-datalabels.min.js"></script>
+<style>
+  :root {
+    --bg:#f4f6f9;--surface:#ffffff;--surface2:#f0f2f6;--surface3:#e8ebf0;
+    --border:rgba(0,0,0,0.08);--border2:rgba(0,0,0,0.15);
+    --text:#1a1f2e;--text2:#4b5563;--text3:#9ca3af;
+    --ok:#16a34a;--watch:#d97706;--alert:#ea580c;--high:#dc2626;
+    --blue:#2563eb;--purple:#7c3aed;--cyan:#0891b2;--teal:#0d9488;
+    --radius:12px;--radius-sm:8px;
+  }
+  *{box-sizing:border-box;margin:0;padding:0}
+  body{background:var(--bg);color:var(--text);font-family:'DM Sans',sans-serif;font-size:14px;min-height:100vh}
+
+  /* HEADER */
+  .hdr{background:var(--surface);border-bottom:1px solid var(--border);padding:0 24px;height:54px;display:flex;align-items:center;justify-content:space-between;position:sticky;top:0;z-index:200}
+  .hdr-logo{width:30px;height:30px;background:var(--blue);border-radius:7px;display:flex;align-items:center;justify-content:center;font-size:13px;font-weight:700;color:#fff;font-family:'DM Mono',monospace;margin-right:12px;flex-shrink:0}
+  .hdr-title{font-size:13px;font-weight:600}
+  .hdr-sub{font-size:11px;color:var(--text3);margin-top:1px}
+  .hdr-right{display:flex;align-items:center;gap:12px}
+  .live-badge{display:flex;align-items:center;gap:5px;font-size:11px;color:var(--ok);font-weight:500;font-family:'DM Mono',monospace}
+  .live-dot{width:6px;height:6px;border-radius:50%;background:var(--ok);animation:pulse 2s infinite}
+  @keyframes pulse{0%,100%{opacity:1}50%{opacity:.3}}
+  .btn{padding:6px 14px;border-radius:8px;border:1px solid var(--border2);background:transparent;color:var(--text2);font-size:12px;font-family:'DM Sans',sans-serif;cursor:pointer;transition:all .15s;font-weight:500}
+  .btn:hover{background:var(--surface2);color:var(--text);border-color:var(--blue)}
+  .btn-primary{background:var(--blue);border-color:var(--blue);color:#fff}
+  .btn-primary:hover{background:#2563eb;border-color:#2563eb;color:#fff}
+  .btn-sm{padding:4px 10px;font-size:11px}
+  .btn-danger{border-color:rgba(239,68,68,.4);color:#ef4444}
+  .btn-danger:hover{background:rgba(239,68,68,.1);border-color:#ef4444}
+
+  .main{padding:20px 24px;max-width:1400px;margin:0 auto}
+
+  /* FILTER / CONTROL BAR */
+  .ctrl-row{display:flex;align-items:center;gap:16px;margin-bottom:16px;flex-wrap:wrap;justify-content:space-between}
+  .ctrl-left{display:flex;align-items:center;gap:8px;flex-wrap:wrap}
+  .ctrl-right{display:flex;align-items:center;gap:8px;flex-wrap:wrap}
+  .filter-label{font-size:10px;color:var(--text3);font-weight:500;letter-spacing:.1em;text-transform:uppercase;margin-right:4px;white-space:nowrap}
+  .fbtn{padding:4px 14px;border-radius:20px;border:1px solid var(--border2);background:transparent;color:var(--text2);font-size:11px;font-family:'DM Sans',sans-serif;cursor:pointer;transition:all .15s;font-weight:500}
+  .fbtn:hover{border-color:var(--blue);color:var(--text)}
+  .fbtn.on{background:var(--blue);border-color:var(--blue);color:#fff}
+  .fdivider{width:1px;height:18px;background:var(--border);margin:0 4px}
+
+  /* DATE SELECTOR */
+  .date-selector-wrap{display:flex;align-items:center;gap:8px;background:var(--surface);border:1px solid var(--border2);border-radius:10px;padding:5px 10px}
+  .date-sel-label{font-size:10px;text-transform:uppercase;letter-spacing:.08em;color:var(--text3);font-weight:500;white-space:nowrap}
+  .date-nav-btn{width:22px;height:22px;border-radius:5px;border:1px solid var(--border2);background:transparent;color:var(--text2);font-size:13px;cursor:pointer;display:flex;align-items:center;justify-content:center;line-height:1;transition:all .15s;flex-shrink:0}
+  .date-nav-btn:hover{background:var(--surface2);color:var(--text);border-color:var(--blue)}
+  .date-nav-btn:disabled{opacity:.3;cursor:default}
+  .date-display{font-size:12px;font-family:'DM Mono',monospace;color:var(--text);min-width:90px;text-align:center}
+  .date-input-sel{background:transparent;border:none;color:var(--text);font-size:11px;font-family:'DM Mono',monospace;outline:none;cursor:pointer;color-scheme:dark;width:100px}
+
+  /* VIEWING BANNER */
+  .view-banner{display:none;align-items:center;gap:10px;padding:8px 14px;background:rgba(59,130,246,0.1);border:1px solid rgba(59,130,246,0.3);border-radius:var(--radius-sm);margin-bottom:14px;font-size:12px;color:var(--blue)}
+  .view-banner.show{display:flex}
+  .view-banner-btn{padding:2px 10px;border-radius:5px;border:1px solid rgba(59,130,246,.4);background:transparent;color:var(--blue);font-size:11px;cursor:pointer;margin-left:auto}
+  .view-banner-btn:hover{background:rgba(59,130,246,.15)}
+
+  /* KPI */
+  .kpi-grid{display:grid;grid-template-columns:repeat(7,minmax(0,1fr));gap:10px;margin-bottom:16px}
+  @media(max-width:1000px){.kpi-grid{grid-template-columns:repeat(4,1fr)}}
+  @media(max-width:600px){.kpi-grid{grid-template-columns:repeat(2,1fr)}}
+  .kpi{background:var(--surface);border:1px solid var(--border);border-radius:var(--radius);padding:13px;position:relative;overflow:hidden}
+  .kpi::before{content:'';position:absolute;top:0;left:0;right:0;height:2px;background:var(--kc,var(--blue));opacity:.7}
+  .kpi-lbl{font-size:10px;text-transform:uppercase;letter-spacing:.1em;color:var(--text3);font-weight:500;margin-bottom:5px}
+  .kpi-val{font-size:24px;font-weight:600;line-height:1;color:var(--kv,var(--text));font-family:'DM Mono',monospace}
+  .kpi-sub{font-size:11px;color:var(--text3);margin-top:4px}
+  /* net balance kpi special */
+  .kpi-net-pos{--kv:#ef4444;--kc:#ef4444}
+  .kpi-net-neg{--kv:#22c55e;--kc:#22c55e}
+  .kpi-net-zero{--kv:#8b90a0;--kc:#8b90a0}
+
+  /* CAP BAR */
+  .cap-wrap{background:var(--surface);border:1px solid var(--border);border-radius:var(--radius);padding:14px 18px;margin-bottom:16px}
+  .cap-hdr{display:flex;justify-content:space-between;align-items:center;margin-bottom:8px}
+  .cap-title{font-size:12px;font-weight:600}
+  .cap-pct{font-size:12px;font-family:'DM Mono',monospace}
+  .cap-bg{height:8px;background:var(--surface2);border-radius:4px;overflow:hidden}
+  .cap-fill{height:100%;border-radius:4px;transition:width .6s ease}
+  .cap-zones{display:flex;margin-top:5px;font-size:10px;color:var(--text3);font-family:'DM Mono',monospace;position:relative;height:13px}
+  .czl{position:absolute;transform:translateX(-50%)}
+
+  /* STATUS LEGEND */
+  .leg-bar{display:flex;align-items:center;gap:14px;padding:9px 14px;background:var(--surface);border:1px solid var(--border);border-radius:var(--radius-sm);margin-bottom:16px;flex-wrap:wrap}
+  .leg-title{font-size:10px;text-transform:uppercase;letter-spacing:.1em;color:var(--text3);font-weight:500}
+  .leg-item{display:flex;align-items:center;gap:5px;font-size:11px;color:var(--text2)}
+  .leg-dot{width:8px;height:8px;border-radius:50%;flex-shrink:0}
+
+  /* CHARTS */
+  .chart-card{background:var(--surface);border:1px solid var(--border);border-radius:var(--radius);padding:18px}
+  .chart-title{font-size:13px;font-weight:600;margin-bottom:3px}
+  .chart-sub{font-size:11px;color:var(--text3);margin-bottom:12px}
+  .chart-leg{display:flex;flex-wrap:wrap;gap:10px;margin-bottom:10px}
+  .cl-item{display:flex;align-items:center;gap:5px;font-size:11px;color:var(--text2)}
+  .cl-sq{width:10px;height:10px;border-radius:2px;flex-shrink:0}
+  .cl-dash{width:18px;height:0;border-top:2px dashed;flex-shrink:0}
+  .cl-dot{width:10px;height:10px;border-radius:50%;flex-shrink:0}
+  .bottom-grid{display:grid;grid-template-columns:1fr 1fr;gap:14px;margin-top:14px}
+  @media(max-width:700px){.bottom-grid{grid-template-columns:1fr}}
+
+  /* ENTRY PANEL */
+  .panel-overlay{display:none;position:fixed;inset:0;background:rgba(0,0,0,.7);z-index:300;align-items:center;justify-content:center;padding:20px}
+  .panel-overlay.open{display:flex}
+  .panel{background:var(--surface);border:1px solid var(--border2);border-radius:16px;width:100%;max-width:600px;max-height:90vh;overflow-y:auto;padding:24px}
+  .panel-hdr{display:flex;align-items:center;justify-content:space-between;margin-bottom:20px}
+  .panel-title{font-size:15px;font-weight:600}
+  .close-btn{width:28px;height:28px;border-radius:6px;border:1px solid var(--border2);background:transparent;color:var(--text2);font-size:16px;cursor:pointer;display:flex;align-items:center;justify-content:center;line-height:1}
+  .close-btn:hover{background:var(--surface2);color:var(--text)}
+  .form-grid{display:grid;grid-template-columns:1fr 1fr;gap:12px}
+  @media(max-width:500px){.form-grid{grid-template-columns:1fr}}
+  .form-group{display:flex;flex-direction:column;gap:5px}
+  .form-group.full{grid-column:1/-1}
+  .form-label{font-size:11px;font-weight:500;color:var(--text2);text-transform:uppercase;letter-spacing:.07em}
+  .form-input{background:var(--surface2);border:1px solid var(--border2);border-radius:8px;padding:8px 11px;color:var(--text);font-size:13px;font-family:'DM Sans',sans-serif;outline:none;transition:border-color .15s}
+  .form-input:focus{border-color:var(--blue)}
+  .form-input::placeholder{color:var(--text3)}
+  .form-section{font-size:10px;text-transform:uppercase;letter-spacing:.1em;color:var(--text3);font-weight:500;margin:16px 0 10px;padding-bottom:6px;border-bottom:1px solid var(--border);grid-column:1/-1}
+  .form-actions{display:flex;gap:10px;justify-content:flex-end;margin-top:20px;padding-top:16px;border-top:1px solid var(--border)}
+  .status-preview{display:flex;align-items:center;gap:8px;padding:8px 12px;border-radius:8px;background:var(--surface2);font-size:12px;font-family:'DM Mono',monospace;margin-top:12px;border:1px solid var(--border)}
+  .sp-dot{width:8px;height:8px;border-radius:50%;flex-shrink:0}
+
+  /* DATA TABLE */
+  .table-hdr{display:flex;align-items:center;justify-content:space-between;margin-bottom:6px}
+  .data-table{width:100%;border-collapse:collapse;font-size:12px;font-family:'DM Mono',monospace}
+  .data-table th{text-align:left;padding:8px 10px;color:var(--text3);font-size:10px;text-transform:uppercase;letter-spacing:.07em;border-bottom:1px solid var(--border);font-weight:500}
+  .data-table td{padding:7px 10px;border-bottom:1px solid var(--border);color:var(--text2);white-space:nowrap}
+  .data-table tr:last-child td{border-bottom:none}
+  .status-badge{display:inline-block;padding:2px 7px;border-radius:4px;font-size:10px;font-weight:500}
+  .del-btn{background:transparent;border:none;color:var(--text3);cursor:pointer;font-size:13px;padding:2px 5px;border-radius:4px;transition:all .15s}
+  .del-btn:hover{background:rgba(239,68,68,.15);color:#ef4444}
+  .editable-row td{cursor:pointer;transition:background .1s}
+  .editable-row td:hover{background:rgba(59,130,246,0.07)}
+  .inline-input{background:var(--surface3);border:1px solid var(--blue);border-radius:5px;color:var(--text);font-size:12px;font-family:'DM Mono',monospace;width:48px;padding:2px 5px;outline:none;text-align:center}
+  .inline-input:focus{box-shadow:0 0 0 2px rgba(59,130,246,.25)}
+  .row-editing td{background:rgba(59,130,246,0.05)!important;cursor:default!important}
+  .row-actions{display:flex;gap:4px;align-items:center}
+  .save-row-btn{padding:2px 9px;border-radius:5px;border:1px solid var(--blue);background:var(--blue);color:#fff;font-size:11px;font-family:'DM Sans',sans-serif;cursor:pointer}
+  .save-row-btn:hover{background:#2563eb}
+  .cancel-row-btn{padding:2px 9px;border-radius:5px;border:1px solid var(--border2);background:transparent;color:var(--text2);font-size:11px;font-family:'DM Sans',sans-serif;cursor:pointer}
+  .cancel-row-btn:hover{background:var(--surface2);color:var(--text)}
+  .table-hint{font-size:11px;color:var(--text3);margin-bottom:8px}
+
+  /* TABS */
+  .tabs{display:flex;gap:4px;margin-bottom:16px;background:var(--surface);border:1px solid var(--border);border-radius:10px;padding:4px;width:fit-content}
+  .tab{padding:5px 16px;border-radius:7px;border:none;background:transparent;color:var(--text3);font-size:12px;font-family:'DM Sans',sans-serif;cursor:pointer;transition:all .15s;font-weight:500}
+  .tab.on{background:var(--surface2);color:var(--text);border:1px solid var(--border2)}
+  .tab-content{display:none}
+  .tab-content.on{display:block}
+  .fade-in{animation:fi .35s ease both}
+  @keyframes fi{from{opacity:0;transform:translateY(6px)}to{opacity:1;transform:translateY(0)}}
+</style>
+</head>
+<body>
+
+<div class="hdr">
+  <div style="display:flex;align-items:center">
+    <div>
+      <div class="hdr-title">THHBD Inpatient Census Projection and Daily Case Volume</div>
+      <div class="hdr-sub">The Heart Hospital Baylor Denton &nbsp;·&nbsp; 1East Inpatient Unit &nbsp;·&nbsp; 22-bed unit</div>
+    </div>
+  </div>
+  <div class="hdr-right">
+    <div class="live-badge"><div class="live-dot"></div>LIVE</div>
+    <button class="btn btn-primary btn-sm" onclick="openPanel()">+ Log Shift</button>
+  </div>
+</div>
+
+<div class="main">
+
+  <div class="tabs">
+    <button class="tab on" onclick="showTab('dashboard',this)">Dashboard</button>
+    <button class="tab" onclick="showTab('data',this)">Shift Log</button>
+  </div>
+
+  <!-- DASHBOARD TAB -->
+  <div class="tab-content on" id="tab-dashboard">
+
+    <!-- CONTROL ROW -->
+    <div class="ctrl-row">
+      <div class="ctrl-left">
+        <span class="filter-label">Chart window</span>
+        <button class="fbtn" onclick="setDays(2,this)">2d</button>
+        <button class="fbtn" onclick="setDays(3,this)">3d</button>
+        <button class="fbtn" onclick="setDays(5,this)">5d</button>
+        <button class="fbtn on" onclick="setDays(7,this)">7d</button>
+        <div class="fdivider"></div>
+        <button class="fbtn" onclick="setDays(14,this)">14d</button>
+      </div>
+      <div class="ctrl-right">
+        <div class="date-selector-wrap">
+          <span class="date-sel-label">KPI date</span>
+          <button class="date-nav-btn" id="datePrev" onclick="stepDate(-1)">‹</button>
+          <input type="date" class="date-input-sel" id="kpiDatePicker" onchange="onDatePick()">
+          <button class="date-nav-btn" id="dateNext" onclick="stepDate(1)">›</button>
+          <button class="fbtn on" style="padding:3px 10px;font-size:10px;margin-left:4px" onclick="goLatest()">Latest</button>
+        </div>
+      </div>
+    </div>
+
+    <!-- VIEWING BANNER -->
+    <div class="view-banner" id="viewBanner">
+      <span id="viewBannerText"></span>
+      <button class="view-banner-btn" onclick="goLatest()">Back to latest</button>
+    </div>
+
+    <!-- KPI CARDS — Row 1: Census -->
+    <div class="kpi-grid" style="grid-template-columns:repeat(8,minmax(0,1fr))">
+      <div class="kpi" style="--kc:#3b82f6">
+        <div class="kpi-lbl">Start Census</div>
+        <div class="kpi-val" id="kpiStart">—</div>
+        <div class="kpi-sub" id="kpiStartDate">—</div>
+      </div>
+      <div class="kpi" style="--kc:#a78bfa">
+        <div class="kpi-lbl">End Census</div>
+        <div class="kpi-val" id="kpiEnd">—</div>
+        <div class="kpi-sub">end of day</div>
+      </div>
+      <div class="kpi" style="--kc:#22c55e">
+        <div class="kpi-lbl">Occupancy</div>
+        <div class="kpi-val" id="kpiOcc">—</div>
+        <div class="kpi-sub" id="kpiOccSub">of 22 beds</div>
+      </div>
+      <div class="kpi" style="--kc:#22c55e">
+        <div class="kpi-lbl">Status</div>
+        <div class="kpi-val" id="kpiStatus" style="font-size:17px;padding-top:5px">—</div>
+        <div class="kpi-sub" id="kpiStatusSub">—</div>
+      </div>
+      <div class="kpi" id="kpiNetCard" style="--kc:#8b90a0">
+        <div class="kpi-lbl">Net Balance</div>
+        <div class="kpi-val" id="kpiNet">—</div>
+        <div class="kpi-sub" id="kpiNetSub">admits − exp DCs</div>
+      </div>
+      <div class="kpi" style="--kc:#06b6d4">
+        <div class="kpi-lbl">Total Admits</div>
+        <div class="kpi-val" id="kpiAdmits">—</div>
+        <div class="kpi-sub" id="kpiAdmitsSub">—</div>
+      </div>
+      <div class="kpi" style="--kc:#f97316">
+        <div class="kpi-lbl">Exp DCs</div>
+        <div class="kpi-val" id="kpiExpDCs">—</div>
+        <div class="kpi-sub">expected discharges</div>
+      </div>
+      <div class="kpi" style="--kc:#14b8a6">
+        <div class="kpi-lbl">Next-Day Proj.</div>
+        <div class="kpi-val" id="kpiNextDay">—</div>
+        <div class="kpi-sub" id="kpiNextDaySub">projected census</div>
+      </div>
+    </div>
+
+    <!-- KPI CARDS — Row 2: Case Volume -->
+    <div style="margin-bottom:4px;font-size:10px;text-transform:uppercase;letter-spacing:.1em;color:var(--text3);font-weight:500">Daily Case Volume</div>
+    <div class="kpi-grid" style="grid-template-columns:repeat(4,minmax(0,1fr));margin-bottom:16px">
+      <div class="kpi" style="--kc:#3b82f6">
+        <div class="kpi-lbl">OR Cases</div>
+        <div class="kpi-val" id="kpiOR">—</div>
+        <div class="kpi-sub" id="kpiORsub">operating room</div>
+      </div>
+      <div class="kpi" style="--kc:#06b6d4">
+        <div class="kpi-lbl">CL Cases</div>
+        <div class="kpi-val" id="kpiCL">—</div>
+        <div class="kpi-sub" id="kpiCLsub">cath lab</div>
+      </div>
+      <div class="kpi" style="--kc:#a78bfa">
+        <div class="kpi-lbl">EP Cases</div>
+        <div class="kpi-val" id="kpiEP">—</div>
+        <div class="kpi-sub" id="kpiEPsub">electrophysiology</div>
+      </div>
+      <div class="kpi" style="--kc:#f59e0b">
+        <div class="kpi-lbl">NI Cases</div>
+        <div class="kpi-val" id="kpiNI">—</div>
+        <div class="kpi-sub" id="kpiNIsub">non-invasive</div>
+      </div>
+    </div>
+
+    <div class="cap-wrap">
+      <div class="cap-hdr"><span class="cap-title">Unit Capacity Utilization</span><span class="cap-pct" id="capPct">—</span></div>
+      <div class="cap-bg"><div class="cap-fill" id="capFill" style="width:0%;background:var(--ok)"></div></div>
+      <div class="cap-zones">
+        <span class="czl" style="left:0%">0</span>
+        <span class="czl" style="left:80%;color:var(--watch)">80%</span>
+        <span class="czl" style="left:90%;color:var(--alert)">90%</span>
+        <span class="czl" style="left:95%;color:var(--high)">95%</span>
+        <span class="czl" style="left:100%">22</span>
+      </div>
+    </div>
+
+    <div class="leg-bar">
+      <span class="leg-title">Status</span>
+      <div class="leg-item"><div class="leg-dot" style="background:var(--ok)"></div>OK — &lt;80%</div>
+      <div class="leg-item"><div class="leg-dot" style="background:var(--watch)"></div>Watch — 80–89%</div>
+      <div class="leg-item"><div class="leg-dot" style="background:var(--alert)"></div>Alert — 90–94%</div>
+      <div class="leg-item"><div class="leg-dot" style="background:var(--high)"></div>High — ≥95%</div>
+    </div>
+
+    <!-- ALERT BANNER -->
+    <div id="alertBanner" style="display:none;margin-bottom:16px;padding:14px 18px;border-radius:var(--radius);border:2px solid;display:none;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:10px">
+      <div style="display:flex;align-items:center;gap:10px">
+        <div id="alertBannerIcon" style="font-size:20px">⚠️</div>
+        <div>
+          <div id="alertBannerTitle" style="font-size:13px;font-weight:700;margin-bottom:2px"></div>
+          <div id="alertBannerSub" style="font-size:12px;opacity:.8"></div>
+        </div>
+      </div>
+      <button id="alertBannerBtn" onclick="openAlertEmail()" style="padding:8px 18px;border-radius:8px;border:none;font-size:12px;font-weight:600;cursor:pointer;font-family:'DM Sans',sans-serif;white-space:nowrap">
+        Generate Alert Email
+      </button>
+    </div>
+
+    <!-- CENSUS CHART -->
+    <div class="chart-card fade-in">
+      <div class="chart-title">Census Projection</div>
+      <div class="chart-sub" id="chartSub">End census · net balance · next-day projection</div>
+      <div class="chart-leg">
+        <div class="cl-item"><div class="cl-sq" style="background:#3b82f6"></div>End census (actual)</div>
+        <div class="cl-item"><div class="cl-sq" style="background:#94a3b8;opacity:.7"></div>End census (planned~)</div>
+        <div class="cl-item"><div class="cl-sq" style="background:#a78bfa;opacity:.5"></div>Start census</div>
+        <div class="cl-item"><div class="cl-dot" style="border:2px solid #0d9488;width:10px;height:10px;border-radius:50%;background:transparent"></div>Next-day proj.*</div>
+        <div class="cl-item"><div class="cl-dash" style="border-color:#f97316"></div>Alert threshold</div>
+        <div class="cl-item" style="font-size:10px;color:var(--text3)">● dot = status</div>
+      </div>
+      <div style="position:relative;width:100%;height:260px"><canvas id="censusChart"></canvas></div>
+    </div>
+
+    <div class="bottom-grid">
+      <div class="chart-card fade-in">
+        <div class="chart-title">Admit Sources</div>
+        <div class="chart-sub">Volume by channel per day</div>
+        <div class="chart-leg">
+          <div class="cl-item"><div class="cl-sq" style="background:#3b82f6"></div>ED</div>
+          <div class="cl-item"><div class="cl-sq" style="background:#06b6d4"></div>Direct</div>
+          <div class="cl-item"><div class="cl-sq" style="background:#a78bfa"></div>Transfers</div>
+          <div class="cl-item"><div class="cl-sq" style="background:#f59e0b"></div>OR</div>
+          <div class="cl-item"><div class="cl-sq" style="background:#22c55e"></div>CL</div>
+          <div class="cl-item"><div class="cl-sq" style="background:#f97316"></div>EP</div>
+        </div>
+        <div style="position:relative;width:100%;height:190px"><canvas id="admitChart"></canvas></div>
+      </div>
+      <div class="chart-card fade-in">
+        <div class="chart-title">Case Volume</div>
+        <div class="chart-sub" id="caseSubtitle">OR · CL · EP · NI</div>
+        <div class="chart-leg">
+          <div class="cl-item"><div class="cl-sq" style="background:#3b82f6"></div>OR</div>
+          <div class="cl-item"><div class="cl-sq" style="background:#06b6d4"></div>CL</div>
+          <div class="cl-item"><div class="cl-sq" style="background:#a78bfa"></div>EP</div>
+          <div class="cl-item"><div class="cl-sq" style="background:#f59e0b"></div>NI</div>
+        </div>
+        <div style="position:relative;width:100%;height:190px"><canvas id="caseChart"></canvas></div>
+      </div>
+    </div>
+
+  </div><!-- /tab-dashboard -->
+
+  <!-- SHIFT LOG TAB -->
+  <div class="tab-content" id="tab-data">
+    <div class="table-hdr">
+      <div style="display:flex;align-items:center;gap:10px">
+        <div class="chart-title">Shift Log</div>
+        <button class="btn btn-sm" id="sortToggleBtn" onclick="toggleSort()" style="font-family:'DM Mono',monospace;font-size:11px">
+          Date ↓ Newest
+        </button>
+      </div>
+      <button class="btn btn-sm btn-danger" onclick="if(confirm('Clear ALL shift data? This cannot be undone.')){clearData()}">Clear all data</button>
+    </div>
+    <div class="table-hint" style="display:flex;gap:16px;margin-bottom:10px">
+      <span style="display:flex;align-items:center;gap:5px"><span style="font-size:12px">✏</span> Manual input</span>
+      <span style="display:flex;align-items:center;gap:5px;color:var(--teal)"><span style="font-size:12px">⚡</span> Auto-calculated</span>
+      <span style="font-size:11px;color:var(--text3);margin-left:4px">· Click any row to edit inline</span>
+    </div>
+    <div style="overflow-x:auto">
+      <table class="data-table" id="shiftTable">
+        <thead>
+          <tr>
+            <th style="color:var(--text2)">✏ Date</th>
+            <th style="color:var(--text2)">✏ Start</th>
+            <th style="color:var(--teal)">⚡ End</th>
+            <th style="color:var(--teal)">⚡ Admits</th>
+            <th style="color:var(--text2)">✏ ED</th>
+            <th style="color:var(--text2)">✏ Direct</th>
+            <th style="color:var(--text2)">✏ Xfer</th>
+            <th style="color:var(--text2)">✏ OR</th>
+            <th style="color:var(--text2)">✏ CL</th>
+            <th style="color:var(--text2)">✏ EP</th>
+            <th style="color:var(--text2)">✏ Exp DCs</th>
+            <th style="color:var(--teal)">⚡ Net Bal</th>
+            <th style="color:var(--text2)">✏ OR vol</th>
+            <th style="color:var(--text2)">✏ CL vol</th>
+            <th style="color:var(--text2)">✏ EP vol</th>
+            <th style="color:var(--text2)">✏ NI vol</th>
+            <th style="color:var(--teal)">⚡ Status</th>
+            <th></th>
+          </tr>
+        </thead>
+        <tbody id="shiftTableBody"></tbody>
+      </table>
+    </div>
+  </div>
+
+</div><!-- /main -->
+
+<!-- ALERT EMAIL MODAL -->
+<div class="panel-overlay" id="alertEmailPanel">
+  <div class="panel" style="max-width:680px">
+    <div class="panel-hdr">
+      <div>
+        <div class="panel-title" id="alertEmailTitle">Alert Email</div>
+        <div style="font-size:11px;color:var(--text3);margin-top:2px">Review and copy — then paste into your email client</div>
+      </div>
+      <button class="close-btn" onclick="closeAlertEmail()">×</button>
+    </div>
+
+    <div style="margin-bottom:14px">
+      <div class="form-label" style="margin-bottom:5px">To</div>
+      <input type="text" class="form-input" id="alertEmailTo" placeholder="[THHBD Leadership Distribution List] e.g. thhbd-leadership@bswhealth.org" style="width:100%">
+    </div>
+    <div style="margin-bottom:14px">
+      <div class="form-label" style="margin-bottom:5px">CC</div>
+      <input type="text" class="form-input" id="alertEmailCc" placeholder="[Medical Staff Distribution List] e.g. thhbd-medstaff@bswhealth.org" style="width:100%">
+    </div>
+    <div style="margin-bottom:14px">
+      <div class="form-label" style="margin-bottom:5px">Subject</div>
+      <input type="text" class="form-input" id="alertEmailSubject" style="width:100%">
+    </div>
+    <div style="margin-bottom:8px">
+      <div class="form-label" style="margin-bottom:5px">Email Body</div>
+      <textarea id="alertEmailBody" class="form-input" rows="16" style="width:100%;resize:vertical;font-family:'DM Mono',monospace;font-size:11px;line-height:1.6"></textarea>
+    </div>
+    <div style="display:flex;gap:10px;justify-content:flex-end;padding-top:14px;border-top:1px solid var(--border)">
+      <button class="btn" onclick="closeAlertEmail()">Close</button>
+      <button class="btn btn-primary" onclick="copyAlertEmail()" id="copyBtn">Copy email body</button>
+      <button class="btn btn-primary" onclick="openMailto()" style="background:#16a34a;border-color:#16a34a">Open in Mail App</button>
+    </div>
+  </div>
+</div>
+
+<!-- ENTRY PANEL -->
+<div class="panel-overlay" id="entryPanel">
+  <div class="panel">
+    <div class="panel-hdr">
+      <div class="panel-title">Log Shift Entry</div>
+      <button class="close-btn" onclick="closePanel()">×</button>
+    </div>
+    <div class="form-grid">
+      <div class="form-group full">
+        <label class="form-label">Date</label>
+        <input type="date" class="form-input" id="fDate">
+      </div>
+      <div class="form-section">Census <span style="font-weight:400;color:var(--text3);font-size:10px;text-transform:none;letter-spacing:0">— ✏ manual &nbsp;·&nbsp; ⚡ auto-calculated</span></div>
+      <div class="form-group">
+        <label class="form-label">✏ Start Census <span id="fStartHint" style="color:var(--teal);font-size:10px;text-transform:none;letter-spacing:0;font-weight:400"></span></label>
+        <input type="number" class="form-input" id="fStart" placeholder="e.g. 16" min="0" max="22" oninput="updatePreview()">
+      </div>
+      <div class="form-group">
+        <label class="form-label">✏ Expected DCs</label>
+        <input type="number" class="form-input" id="fExpDCs" placeholder="0" min="0" oninput="updatePreview()">
+      </div>
+      <div class="form-group">
+        <label class="form-label" style="color:var(--teal)">⚡ Total Admits <span style="font-size:10px;font-weight:400;color:var(--text3)">(sum of sources)</span></label>
+        <div style="background:var(--surface3);border:1px solid var(--teal);border-radius:8px;padding:8px 11px;display:flex;align-items:center;justify-content:space-between">
+          <span id="fAdmitsDisplay" style="font-size:20px;font-weight:600;font-family:'DM Mono',monospace;color:var(--teal)">—</span>
+          <span id="fAdmitsFormula" style="font-size:11px;color:var(--text3);font-family:'DM Mono',monospace"></span>
+        </div>
+        <input type="hidden" id="fAdmits">
+      </div>
+      <div class="form-group">
+        <label class="form-label" style="color:var(--teal)">⚡ End Census <span style="font-size:10px;font-weight:400;color:var(--text3)">(Start + Admits − DCs)</span></label>
+        <div style="background:var(--surface3);border:1px solid var(--teal);border-radius:8px;padding:8px 11px;display:flex;align-items:center;justify-content:space-between">
+          <span id="fEndDisplay" style="font-size:20px;font-weight:600;font-family:'DM Mono',monospace;color:var(--teal)">—</span>
+          <span id="fEndFormula" style="font-size:11px;color:var(--text3);font-family:'DM Mono',monospace"></span>
+        </div>
+        <input type="hidden" id="fEnd">
+      </div>
+      <div class="form-section">Admit Sources <span style="font-weight:400;color:var(--text3);font-size:10px;text-transform:none;letter-spacing:0">— ✏ all manual · Total Admits auto-sums below</span></div>
+      <div class="form-group"><label class="form-label">✏ ED</label><input type="number" class="form-input" id="fED" placeholder="0" min="0" oninput="updatePreview()"></div>
+      <div class="form-group"><label class="form-label">✏ Direct Admit</label><input type="number" class="form-input" id="fDirect" placeholder="0" min="0" oninput="updatePreview()"></div>
+      <div class="form-group"><label class="form-label">✏ Transfers</label><input type="number" class="form-input" id="fTransfers" placeholder="0" min="0" oninput="updatePreview()"></div>
+      <div class="form-group"><label class="form-label">✏ OR</label><input type="number" class="form-input" id="fOR" placeholder="0" min="0" oninput="updatePreview()"></div>
+      <div class="form-group"><label class="form-label">✏ CL (Cath Lab)</label><input type="number" class="form-input" id="fCL" placeholder="0" min="0" oninput="updatePreview()"></div>
+      <div class="form-group"><label class="form-label">✏ EP</label><input type="number" class="form-input" id="fEP" placeholder="0" min="0" oninput="updatePreview()"></div>
+      <div class="form-section">Case Volume <span style="font-weight:400;color:var(--text3);font-size:10px;text-transform:none;letter-spacing:0">— optional</span></div>
+      <div class="form-group"><label class="form-label">✏ OR Cases</label><input type="number" class="form-input" id="fORvol" placeholder="0" min="0"></div>
+      <div class="form-group"><label class="form-label">✏ CL Cases</label><input type="number" class="form-input" id="fCLvol" placeholder="0" min="0"></div>
+      <div class="form-group"><label class="form-label">✏ EP Cases</label><input type="number" class="form-input" id="fEPvol" placeholder="0" min="0"></div>
+      <div class="form-group"><label class="form-label">✏ NI Cases</label><input type="number" class="form-input" id="fNIvol" placeholder="0" min="0"></div>
+      <div class="form-group full">
+        <div class="status-preview" id="statusPreview">
+          <div class="sp-dot" id="spDot" style="background:var(--text3)"></div>
+          <span id="spText" style="color:var(--text3)">Enter census values to preview</span>
+        </div>
+      </div>
+    </div>
+    <div class="form-actions">
+      <button class="btn" onclick="closePanel()">Cancel</button>
+      <button class="btn btn-primary" onclick="saveEntry()">Save Entry</button>
+    </div>
+  </div>
+</div>
+
+<script>
+// ── SEED DATA ────────────────────────────────────────────────────────────────
+const SEED=[
+  {date:'2026-03-18',start:14,end:20,admits:8, expDCs:2, ed:4,direct:0,transfers:4,or:0,cl:0,ep:0,orVol:0,clVol:0,epVol:0,niVol:0},
+  {date:'2026-03-19',start:20,end:18,admits:2, expDCs:4, ed:1,direct:0,transfers:0,or:1,cl:0,ep:0,orVol:0,clVol:0,epVol:0,niVol:0},
+  {date:'2026-03-20',start:18,end:16,admits:3, expDCs:5, ed:0,direct:1,transfers:2,or:0,cl:0,ep:0,orVol:0,clVol:0,epVol:0,niVol:0},
+  {date:'2026-03-21',start:16,end:14,admits:3, expDCs:5, ed:2,direct:0,transfers:0,or:1,cl:0,ep:0,orVol:0,clVol:0,epVol:0,niVol:0},
+  {date:'2026-03-22',start:14,end:14,admits:1, expDCs:1, ed:0,direct:1,transfers:0,or:0,cl:0,ep:0,orVol:0,clVol:0,epVol:0,niVol:0},
+  {date:'2026-03-23',start:14,end:13,admits:3, expDCs:4, ed:0,direct:1,transfers:0,or:2,cl:0,ep:0,orVol:4,clVol:8,epVol:5,niVol:1},
+  {date:'2026-03-24',start:13,end:12,admits:2, expDCs:3, ed:0,direct:0,transfers:1,or:0,cl:1,ep:0,orVol:3,clVol:8,epVol:7,niVol:1},
+  {date:'2026-03-25',start:12,end:9, admits:2, expDCs:5, ed:0,direct:0,transfers:1,or:0,cl:1,ep:0,orVol:1,clVol:6,epVol:3,niVol:3},
+  {date:'2026-03-26',start:9, end:11,admits:2, expDCs:0, ed:0,direct:0,transfers:0,or:2,cl:0,ep:0,orVol:2,clVol:1,epVol:8,niVol:7},
+  {date:'2026-03-27',start:11,end:13,admits:2, expDCs:0, ed:0,direct:0,transfers:0,or:2,cl:0,ep:0,orVol:2,clVol:5,epVol:10,niVol:4},
+  {date:'2026-03-28',start:13,end:11,admits:0, expDCs:2, ed:0,direct:0,transfers:0,or:0,cl:0,ep:0,orVol:0,clVol:0,epVol:0,niVol:0},
+  {date:'2026-03-29',start:11,end:11,admits:0, expDCs:0, ed:0,direct:0,transfers:0,or:0,cl:0,ep:0,orVol:0,clVol:0,epVol:0,niVol:0},
+  {date:'2026-03-30',start:11,end:12,admits:1, expDCs:0, ed:0,direct:0,transfers:0,or:1,cl:0,ep:0,orVol:0,clVol:0,epVol:0,niVol:0},
+  {date:'2026-03-31',start:12,end:15,admits:3, expDCs:0, ed:0,direct:0,transfers:1,or:2,cl:0,ep:0,orVol:0,clVol:0,epVol:0,niVol:0},
+  {date:'2026-04-01',start:15,end:17,admits:2, expDCs:0, ed:0,direct:0,transfers:0,or:1,cl:0,ep:1,orVol:0,clVol:0,epVol:0,niVol:0},
+];
+
+const CAP=22, ALERT_LINE=19.8;
+const SC=s=>({OK:'#22c55e',WATCH:'#f59e0b',ALERT:'#f97316',HIGH:'#ef4444'}[s]||'#22c55e');
+const GC='rgba(0,0,0,0.06)';
+const TS={color:'#6b7280',font:{size:10,family:"'DM Mono',monospace"}};
+
+// ── STORAGE ──────────────────────────────────────────────────────────────────
+const DATA_KEY='cvicu_census_v5'; // bumped version forces fresh seed load
+
+function loadData(){
+  try{const s=localStorage.getItem(DATA_KEY);if(s){const d=JSON.parse(s);if(d&&d.length>0)return d;}}catch(e){}
+  localStorage.setItem(DATA_KEY,JSON.stringify(SEED));
+  return JSON.parse(JSON.stringify(SEED));
+}
+function saveData(d){localStorage.setItem(DATA_KEY,JSON.stringify(d));}
+function clearData(){localStorage.removeItem(DATA_KEY);location.reload();}
+function getStatus(end){const o=end/CAP;if(o>=.95)return'HIGH';if(o>=.90)return'ALERT';if(o>=.80)return'WATCH';return'OK';}
+function fmtDate(d){const dt=new Date(d+'T00:00:00');return dt.toLocaleDateString('en-US',{month:'2-digit',day:'2-digit'})+' '+dt.toLocaleDateString('en-US',{weekday:'short'});}
+function netBalance(d){return (d.admits||0)-(d.expDCs||0);}
+
+// ── DATE SELECTOR STATE ───────────────────────────────────────────────────────
+let selectedDate=null; // null = latest
+
+function getAllDates(){return loadData().sort((a,b)=>a.date>b.date?1:-1).map(d=>d.date);}
+
+function initDatePicker(){
+  const dates=getAllDates();
+  if(!dates.length)return;
+  const picker=document.getElementById('kpiDatePicker');
+  picker.min=dates[0];
+  picker.max=dates[dates.length-1];
+
+  // Default to today, or closest available date in the log
+  const today=new Date().toISOString().split('T')[0];
+  let defaultDate=today;
+  if(!dates.includes(today)){
+    // Find the closest date — prefer the most recent date on or before today
+    const past=dates.filter(d=>d<=today);
+    defaultDate=past.length?past[past.length-1]:dates[0];
+  }
+  picker.value=defaultDate;
+  const latest=dates[dates.length-1];
+  selectedDate=(defaultDate===latest)?null:defaultDate;
+  updateNavBtns();
+  updateBanner();
+}
+
+function onDatePick(){
+  const v=document.getElementById('kpiDatePicker').value;
+  const data=loadData().sort((a,b)=>a.date>b.date?1:-1);
+  const latest=data[data.length-1];
+  selectedDate=(v===latest.date)?null:v;
+  refreshKPI();
+  buildAll(currentDays);
+  updateNavBtns();
+  updateBanner();
+}
+
+function goLatest(){
+  selectedDate=null;
+  const dates=getAllDates();
+  if(dates.length){document.getElementById('kpiDatePicker').value=dates[dates.length-1];}
+  refreshKPI();
+  buildAll(currentDays);
+  updateNavBtns();
+  updateBanner();
+}
+
+function stepDate(dir){
+  const dates=getAllDates();
+  if(!dates.length)return;
+  const current=document.getElementById('kpiDatePicker').value||dates[dates.length-1];
+  const idx=dates.indexOf(current);
+  const newIdx=Math.max(0,Math.min(dates.length-1,idx+dir));
+  document.getElementById('kpiDatePicker').value=dates[newIdx];
+  onDatePick();
+}
+
+function updateNavBtns(){
+  const dates=getAllDates();
+  const current=document.getElementById('kpiDatePicker').value;
+  document.getElementById('datePrev').disabled=current===dates[0];
+  document.getElementById('dateNext').disabled=current===dates[dates.length-1];
+}
+
+function updateBanner(){
+  const banner=document.getElementById('viewBanner');
+  const txt=document.getElementById('viewBannerText');
+  if(selectedDate){
+    banner.classList.add('show');
+    txt.textContent=`Viewing: ${fmtDate(selectedDate)} — KPI cards show this date's data`;
+  } else {
+    banner.classList.remove('show');
+  }
+}
+
+function refreshKPI(){
+  const data=loadData().sort((a,b)=>a.date>b.date?1:-1);
+  const d=selectedDate?data.find(r=>r.date===selectedDate):data[data.length-1];
+  if(d) updateKPI(d,data);
+}
+
+// ── KPI ───────────────────────────────────────────────────────────────────────
+function updateKPI(d, allData){
+  const occ=((d.end/CAP)*100).toFixed(1);
+  const oc=d.end>=CAP*.95?'#ef4444':d.end>=CAP*.9?'#f97316':d.end>=CAP*.8?'#f59e0b':'#22c55e';
+  const st=getStatus(d.end);
+  const net=netBalance(d);
+
+  document.getElementById('kpiStart').textContent=d.start;
+  document.getElementById('kpiStartDate').textContent=fmtDate(d.date);
+  document.getElementById('kpiEnd').textContent=d.end;
+  document.getElementById('kpiOcc').textContent=occ+'%';
+  document.getElementById('kpiOcc').style.setProperty('--kv',oc);
+  document.getElementById('kpiOccSub').textContent=`${d.end} of ${CAP} beds`;
+  document.getElementById('kpiAdmits').textContent=d.admits||0;
+  document.getElementById('kpiAdmitsSub').textContent=`exp DCs: ${d.expDCs||0}`;
+  document.getElementById('kpiExpDCs').textContent=d.expDCs||0;
+  document.getElementById('kpiStatus').textContent=st;
+  document.getElementById('kpiStatus').style.color=SC(st);
+  document.getElementById('kpiStatusSub').textContent={OK:'below 80%',WATCH:'80–89%',ALERT:'90–94%',HIGH:'≥95%'}[st];
+  document.getElementById('capPct').textContent=occ+'%';
+  document.getElementById('capPct').style.color=oc;
+  document.getElementById('capFill').style.width=Math.min(occ,100)+'%';
+  document.getElementById('capFill').style.background=oc;
+
+  // Net balance card
+  const netEl=document.getElementById('kpiNet');
+  const netCard=document.getElementById('kpiNetCard');
+  netEl.textContent=(net>0?'+':'')+net;
+  const netColor=net>0?'#ef4444':net<0?'#22c55e':'#8b90a0';
+  netEl.style.setProperty('--kv',netColor);
+  netCard.style.setProperty('--kc',netColor);
+  document.getElementById('kpiNetSub').textContent=net>0?'census climbing':net<0?'beds opening':'stable';
+
+  // Next-day projection
+  const sorted=(allData||loadData()).sort((a,b)=>a.date>b.date?1:-1);
+  const idx=sorted.findIndex(r=>r.date===d.date);
+  const nextDay=sorted[idx+1];
+  const ndEl=document.getElementById('kpiNextDay');
+  const ndSub=document.getElementById('kpiNextDaySub');
+  if(nextDay){
+    const proj=nextDay.start;
+    ndEl.textContent=proj;
+    ndSub.textContent=`${fmtDate(nextDay.date)} (actual)`;
+    ndEl.style.setProperty('--kv', proj>=ALERT_LINE?'#f97316':'#14b8a6');
+  } else {
+    const recent=sorted.slice(-3);
+    const avgNet=Math.round(recent.reduce((s,r)=>s+netBalance(r),0)/recent.length);
+    const proj=Math.max(0,Math.min(CAP,d.end+avgNet));
+    ndEl.textContent=proj;
+    ndSub.textContent=`est. next shift (${avgNet>=0?'+':''}${avgNet} avg net)`;
+    ndEl.style.setProperty('--kv', proj>=ALERT_LINE?'#f97316':'#14b8a6');
+  }
+
+  // Alert banner
+  updateAlertBanner(st, d, occ);
+
+  // Case volume cards
+  const hasCase=d.orVol||d.clVol||d.epVol||d.niVol;
+  const totalCases=(d.orVol||0)+(d.clVol||0)+(d.epVol||0)+(d.niVol||0);
+  document.getElementById('kpiOR').textContent=hasCase?(d.orVol||0):'—';
+  document.getElementById('kpiCL').textContent=hasCase?(d.clVol||0):'—';
+  document.getElementById('kpiEP').textContent=hasCase?(d.epVol||0):'—';
+  document.getElementById('kpiNI').textContent=hasCase?(d.niVol||0):'—';
+  document.getElementById('kpiORsub').textContent=hasCase?`of ${totalCases} total`:'not logged';
+  document.getElementById('kpiCLsub').textContent=hasCase?`of ${totalCases} total`:'not logged';
+  document.getElementById('kpiEPsub').textContent=hasCase?`of ${totalCases} total`:'not logged';
+  document.getElementById('kpiNIsub').textContent=hasCase?`of ${totalCases} total`:'not logged';
+}
+
+// ── ALERT BANNER & EMAIL ──────────────────────────────────────────────────────
+let currentAlertData = null;
+
+function updateAlertBanner(st, d, occ){
+  const banner=document.getElementById('alertBanner');
+  const title=document.getElementById('alertBannerTitle');
+  const sub=document.getElementById('alertBannerSub');
+  const btn=document.getElementById('alertBannerBtn');
+  currentAlertData={st, d, occ};
+
+  if(st==='HIGH'){
+    banner.style.display='flex';
+    banner.style.background='rgba(220,38,38,0.08)';
+    banner.style.borderColor='#dc2626';
+    title.style.color='#dc2626';
+    title.textContent='🔴 HIGH CENSUS ALERT — Activate High Census Alert Plan';
+    sub.style.color='#dc2626';
+    sub.textContent=`Census: ${d.end}/${CAP} beds · Occupancy: ${occ}% · ${fmtDate(d.date)}`;
+    btn.style.background='#dc2626';
+    btn.style.color='#fff';
+    btn.style.border='none';
+    btn.textContent='Generate High Census Alert Email';
+  } else if(st==='ALERT'){
+    banner.style.display='flex';
+    banner.style.background='rgba(234,88,12,0.08)';
+    banner.style.borderColor='#ea580c';
+    title.style.color='#ea580c';
+    title.textContent='🟠 ALERT — Census Approaching High Threshold';
+    sub.style.color='#ea580c';
+    sub.textContent=`Census: ${d.end}/${CAP} beds · Occupancy: ${occ}% · ${fmtDate(d.date)} — Notify leadership to plan ahead`;
+    btn.style.background='#ea580c';
+    btn.style.color='#fff';
+    btn.style.border='none';
+    btn.textContent='Generate Alert Notification Email';
+  } else {
+    banner.style.display='none';
+  }
+}
+
+function openAlertEmail(){
+  const {st, d, occ} = currentAlertData || {};
+  if(!d) return;
+  const now = new Date().toLocaleString('en-US',{month:'short',day:'numeric',year:'numeric',hour:'numeric',minute:'2-digit'});
+  const net = netBalance(d);
+
+  let subject, body;
+  if(st==='HIGH'){
+    subject=`HIGH CENSUS ALERT — THHBD 1East Inpatient Unit — ${fmtDate(d.date)}`;
+    body=`HIGH CENSUS ALERT — PLAN ACTIVATED
+The Heart Hospital Baylor Denton | 1East Inpatient Unit
+${now}
+
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+CURRENT CENSUS STATUS
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+  Date:           ${fmtDate(d.date)}
+  Current Census: ${d.end} of ${CAP} beds
+  Occupancy:      ${occ}% — HIGH (≥95%)
+  Start Census:   ${d.start}
+  Total Admits:   ${d.admits||0}
+  Expected DCs:   ${d.expDCs||0}
+  Net Balance:    ${net>0?'+':''}${net}
+
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+HIGH CENSUS ALERT PLAN — ACTION STEPS
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+The High Census Alert Plan has been activated per THHBD policy.
+Leadership (President or VP) has been notified to authorize activation.
+
+1. Nurse Practitioners and Physicians — prioritize rounding on highly 
+   needed units first to discharge or transfer any patient that is 
+   medically cleared.
+
+2. Nursing Supervisor — initiate bed "SOS"/huddle to discuss bed 
+   request, bed availability, staffing, pending transfers and 
+   admissions as needed.
+
+3. Scheduling Department — communicate with Nursing Supervisor on 
+   requested elective cases. Nursing Supervisor communicates number 
+   of newly requested elective cases to President, VP or Designee.
+
+4. Elective cases — will be triaged based on acuity and schedule 
+   availability by Nursing Supervisor, Procedural Department Director, 
+   President, VP, or Designee as needed.
+
+5. All licensed personnel — should be available to help discharge, 
+   admit, pre op, or care for in-house or incoming patients. In 
+   addition to assisting with ED Surge Plan activation.
+
+6. All non-licensed personnel — should be available to help transport 
+   or make phone calls to employees or bring needed beds or equipment 
+   to designated areas. In addition to assisting with ED Surge Plan 
+   activation.
+
+7. All Managers, Supervisors, Directors and VPs — shall round for 
+   service recovery on holding patients/families and employees.
+
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+Periodic updates will be sent as needed.
+
+Respectfully,
+[Administrative Nursing Supervisor]
+The Heart Hospital Baylor Denton
+[Phone Number]`;
+  } else {
+    subject=`CENSUS ALERT NOTIFICATION — THHBD 1East Inpatient Unit — ${fmtDate(d.date)}`;
+    body=`CENSUS ALERT NOTIFICATION — ADVANCE PLANNING
+The Heart Hospital Baylor Denton | 1East Inpatient Unit
+${now}
+
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+CURRENT CENSUS STATUS
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+  Date:           ${fmtDate(d.date)}
+  Current Census: ${d.end} of ${CAP} beds
+  Occupancy:      ${occ}% — ALERT (90–94%)
+  Start Census:   ${d.start}
+  Total Admits:   ${d.admits||0}
+  Expected DCs:   ${d.expDCs||0}
+  Net Balance:    ${net>0?'+':''}${net}
+
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+ADVANCE PLANNING NOTICE
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+1East census has reached ALERT level (90–94% occupancy). 
+This notification is being sent to allow leadership to plan 
+ahead before the High Census Alert threshold (≥95%) is reached.
+
+RECOMMENDED ACTIONS:
+  • Review pending discharges and expedite where clinically appropriate
+  • Assess pending admissions and transfer requests
+  • Review elective case schedule with Scheduling Department
+  • Ensure staffing levels are adequate for potential surge
+  • Prepare for possible High Census Alert Plan activation
+
+The Administrative Nursing Supervisor is monitoring the census 
+closely and will provide updates as the situation evolves.
+
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+Respectfully,
+[Administrative Nursing Supervisor]
+The Heart Hospital Baylor Denton
+[Phone Number]`;
+  }
+
+  document.getElementById('alertEmailSubject').value=subject;
+  document.getElementById('alertEmailBody').value=body;
+  document.getElementById('alertEmailPanel').classList.add('open');
+}
+
+function closeAlertEmail(){
+  document.getElementById('alertEmailPanel').classList.remove('open');
+}
+
+function copyAlertEmail(){
+  const body=document.getElementById('alertEmailBody').value;
+  const subject=document.getElementById('alertEmailSubject').value;
+  const full=`Subject: ${subject}\n\n${body}`;
+  navigator.clipboard.writeText(full).then(()=>{
+    const btn=document.getElementById('copyBtn');
+    btn.textContent='Copied!';
+    btn.style.background='#16a34a';
+    setTimeout(()=>{btn.textContent='Copy email body';btn.style.background='';},2000);
+  });
+}
+
+function openMailto(){
+  const to=encodeURIComponent(document.getElementById('alertEmailTo').value||'');
+  const cc=encodeURIComponent(document.getElementById('alertEmailCc').value||'');
+  const subject=encodeURIComponent(document.getElementById('alertEmailSubject').value||'');
+  const body=encodeURIComponent(document.getElementById('alertEmailBody').value||'');
+  window.location.href=`mailto:${to}?cc=${cc}&subject=${subject}&body=${body}`;
+}
+
+// ── CHARTS ────────────────────────────────────────────────────────────────────
+let censusChart,admitChart,caseChart;
+
+function buildAll(n){
+  const all=loadData().sort((a,b)=>a.date>b.date?1:-1);
+  let startIdx=0;
+  if(selectedDate){
+    const idx=all.findIndex(r=>r.date===selectedDate);
+    startIdx=idx>=0?idx:0;
+  } else {
+    // anchor to latest — go back N from end
+    startIdx=Math.max(0,all.length-n);
+  }
+  const slice=all.slice(startIdx, startIdx+n);
+  buildCensus(slice,all);
+  buildAdmits(slice);
+  buildCase(all);
+  refreshKPI();
+  const anchorLabel=selectedDate?`From ${fmtDate(selectedDate)}`:`Last ${n} days`;
+  document.getElementById('chartSub').textContent=`${anchorLabel} · ${slice.length} entries · next-day projection`;
+}
+
+function buildCensus(slice, all){
+  if(censusChart)censusChart.destroy();
+
+  // Build projection point: one point beyond the last real entry
+  const lastReal=slice[slice.length-1];
+  const allSorted=all.sort((a,b)=>a.date>b.date?1:-1);
+  const lastIdx=allSorted.findIndex(r=>r.date===lastReal.date);
+  const nextInData=allSorted[lastIdx+1];
+  const recent=slice.slice(-3);
+  const avgNet=Math.round(recent.reduce((s,r)=>s+netBalance(r),0)/recent.length);
+  const projVal=nextInData?nextInData.start:Math.max(0,Math.min(CAP,lastReal.end+avgNet));
+  const projLabel=nextInData?fmtDate(nextInData.date):'Proj.';
+
+  const today=new Date().toISOString().split('T')[0];
+  const labels=[...slice.map(d=>fmtDate(d.date)),projLabel];
+  const endData=[...slice.map(d=>d.end),null];
+  const startData=[...slice.map(d=>d.start),null];
+  const projData=[...Array(slice.length).fill(null),projVal];
+
+  // Split end census into actual (past/today) and future (separate dashed dataset)
+  const endActual=slice.map(d=>d.date<=today?d.end:null);
+  const endFuture=slice.map((d,i)=>{
+    if(d.date>today) return d.end;
+    // bridge: include last actual point so line connects
+    if(i>0 && slice[i-1].date<=today && d.date>today) return slice[i-1].end;
+    return null;
+  });
+  // Find the last actual index to create the bridge point
+  const lastActualIdx=slice.reduce((acc,d,i)=>d.date<=today?i:acc,-1);
+  const endFutureBridged=slice.map((d,i)=>{
+    if(d.date>today) return d.end;
+    if(i===lastActualIdx) return d.end; // bridge point
+    return null;
+  });
+
+  censusChart=new Chart(document.getElementById('censusChart'),{
+    type:'line',
+    data:{
+      labels,
+      datasets:[
+        // Start census dashed line — first in array = first in tooltip
+        {label:'Start',data:startData,borderColor:'rgba(167,139,250,.4)',borderWidth:1.5,borderDash:[5,4],tension:.35,fill:false,pointRadius:3,pointBackgroundColor:'#a78bfa',pointBorderColor:'#a78bfa',order:2,
+         datalabels:{
+           display:true,
+           align:'top',
+           anchor:'top',
+           offset:4,
+           font:{size:11,weight:'600',family:"'DM Mono',monospace"},
+           color:'#7c3aed',
+           formatter:(v)=>v===null?'':v,
+           backgroundColor:'rgba(255,255,255,0.9)',
+           borderRadius:4,
+           borderWidth:1,
+           borderColor:'rgba(124,58,237,0.3)',
+           padding:{top:2,bottom:2,left:4,right:4},
+         }},
+        // End census — ACTUAL (solid blue)
+        {label:'End',data:[...endActual,null],borderColor:'#3b82f6',backgroundColor:'rgba(59,130,246,0.08)',borderWidth:2.5,tension:.35,fill:true,
+         pointBackgroundColor:slice.map(d=>d.date<=today?SC(getStatus(d.end)):'transparent'),
+         pointBorderColor:slice.map(d=>d.date<=today?SC(getStatus(d.end)):'transparent'),
+         pointRadius:slice.map(d=>d.date<=today?6:0),pointHoverRadius:9,order:1,
+         datalabels:{display:false},spanGaps:false},
+        // End census — FUTURE (dashed gray)
+        {label:'End',data:[...endFutureBridged,null],borderColor:'rgba(100,116,139,0.6)',backgroundColor:'rgba(100,116,139,0.04)',borderWidth:2,borderDash:[6,4],tension:.35,fill:true,
+         pointBackgroundColor:slice.map(d=>d.date>today?'#64748b':'transparent'),
+         pointBorderColor:slice.map(d=>d.date>today?'#64748b':'transparent'),
+         pointRadius:slice.map(d=>d.date>today?5:0),pointHoverRadius:7,order:1,
+         datalabels:{
+           display:slice.map(d=>d.date>today),
+           align:'top',anchor:'top',offset:4,
+           font:{size:10,weight:'600',family:"'DM Mono',monospace"},
+           color:'#64748b',
+           formatter:(v)=>v===null?'':v+'~',
+           backgroundColor:'rgba(255,255,255,0.85)',
+           borderRadius:4,borderWidth:1,borderColor:'rgba(100,116,139,0.3)',
+           padding:{top:2,bottom:2,left:4,right:4},
+         }},
+        // Alert threshold
+        {label:'Alert',data:Array(labels.length).fill(ALERT_LINE),borderColor:'rgba(249,115,22,.5)',borderWidth:1.5,borderDash:[8,5],fill:false,pointRadius:0,tension:0,order:4,
+         datalabels:{display:false}},
+        // Next-day projection dotted point
+        {label:'Proj',data:projData,borderColor:'#0d9488',borderWidth:2,borderDash:[4,3],fill:false,
+         pointBackgroundColor:'transparent',pointBorderColor:'#0d9488',pointBorderWidth:2.5,pointRadius:7,pointHoverRadius:10,order:0,
+         datalabels:{
+           display:true,
+           align:'top',anchor:'top',offset:4,
+           font:{size:11,weight:'600',family:"'DM Mono',monospace"},
+           color:'#0d9488',
+           formatter:(v)=>v===null?'':v+'*',
+           backgroundColor:'rgba(255,255,255,0.9)',
+           borderRadius:4,borderWidth:1,borderColor:'rgba(13,148,136,0.3)',
+           padding:{top:2,bottom:2,left:4,right:4},
+         }},
+      ]
+    },
+    options:{
+      responsive:true,maintainAspectRatio:false,
+      interaction:{mode:'index',intersect:false},
+      plugins:{
+        legend:{display:false},
+        datalabels:{display:false}, // default off — overridden per dataset above
+        tooltip:{
+          backgroundColor:'#1e2330',borderColor:'rgba(255,255,255,.15)',borderWidth:1,
+          titleColor:'#e2e8f0',bodyColor:'#cbd5e1',padding:10,
+          filter:item=>item.dataset.label!=='Alert',
+          itemSort:(a,b)=>{
+            const order=['Start','End','Proj'];
+            return order.indexOf(a.dataset.label)-order.indexOf(b.dataset.label);
+          },
+          callbacks:{
+            afterBody:ctx=>{
+              const i=ctx[0].dataIndex;
+              if(i>=slice.length)return[`Next-day projection: ${projVal} beds`];
+              const d=slice[i];
+              const net=netBalance(d);
+              const occ=((d.end/CAP)*100).toFixed(1);
+              return[
+                `Occupancy: ${occ}%`,
+                `Status: ${getStatus(d.end)}`,
+                `Net balance: ${net>0?'+':''}${net} (${net>0?'climbing':net<0?'opening':'stable'})`,
+                `Exp Admits: ${d.admits||0}`,
+                `Exp DCs: ${d.expDCs||0}`
+              ];
+            }
+          }
+        }
+      },
+      scales:{
+        y:{min:0,max:26,grid:{color:GC},ticks:{...TS,stepSize:4},
+           title:{display:true,text:'Census',color:'#6b7280',font:{size:10}}},
+        x:{grid:{display:false},ticks:{...TS,autoSkip:false,maxRotation:30}}
+      }
+    }
+  });
+}
+
+function buildAdmits(slice){
+  if(admitChart)admitChart.destroy();
+  const keys=[['ed','#3b82f6','ED'],['direct','#06b6d4','Direct'],['transfers','#a78bfa','Transfers'],['or','#f59e0b','OR'],['cl','#22c55e','CL'],['ep','#f97316','EP']];
+  admitChart=new Chart(document.getElementById('admitChart'),{
+    type:'bar',
+    data:{
+      labels:slice.map(d=>fmtDate(d.date).split(' ')[0]),
+      datasets:keys.map(([k,c,l])=>({label:l,data:slice.map(d=>d[k]||0),backgroundColor:c,borderRadius:3,stack:'a'}))
+    },
+    options:{responsive:true,maintainAspectRatio:false,
+      plugins:{legend:{display:false},tooltip:{backgroundColor:'#1e2330',borderColor:'rgba(0,0,0,.15)',borderWidth:1,titleColor:'#9ca3af',bodyColor:'#f3f4f6'}},
+      scales:{x:{stacked:true,grid:{display:false},ticks:TS},y:{stacked:true,grid:{color:GC},ticks:TS}}
+    }
+  });
+}
+
+function buildCase(all){
+  const slice=all.filter(d=>d.orVol||d.clVol||d.epVol||d.niVol).slice(-7);
+  if(caseChart)caseChart.destroy();
+  if(!slice.length){document.getElementById('caseSubtitle').textContent='No case volume data yet';return;}
+  document.getElementById('caseSubtitle').textContent=`Last ${slice.length} entries with case data`;
+  caseChart=new Chart(document.getElementById('caseChart'),{
+    type:'bar',
+    data:{
+      labels:slice.map(d=>fmtDate(d.date).split(' ')[0]),
+      datasets:[
+        {label:'OR',data:slice.map(d=>d.orVol||0),backgroundColor:'#3b82f6',borderRadius:3,stack:'v'},
+        {label:'CL',data:slice.map(d=>d.clVol||0),backgroundColor:'#06b6d4',borderRadius:3,stack:'v'},
+        {label:'EP',data:slice.map(d=>d.epVol||0),backgroundColor:'#a78bfa',borderRadius:3,stack:'v'},
+        {label:'NI',data:slice.map(d=>d.niVol||0),backgroundColor:'#f59e0b',borderRadius:3,stack:'v'},
+      ]
+    },
+    options:{responsive:true,maintainAspectRatio:false,
+      plugins:{legend:{display:false},tooltip:{backgroundColor:'#1e2330',borderColor:'rgba(0,0,0,.15)',borderWidth:1,titleColor:'#9ca3af',bodyColor:'#f3f4f6'}},
+      scales:{x:{stacked:true,grid:{display:false},ticks:TS},y:{stacked:true,grid:{color:GC},ticks:TS}}
+    }
+  });
+}
+
+// ── SHIFT TABLE ───────────────────────────────────────────────────────────────
+let editingDate=null;
+let tableSortDesc=true; // default: newest first
+
+function toggleSort(){
+  tableSortDesc=!tableSortDesc;
+  const btn=document.getElementById('sortToggleBtn');
+  if(btn) btn.textContent=tableSortDesc?'Date ↓ Newest':'Date ↑ Oldest';
+  renderTable();
+}
+
+function renderTable(){
+  const data=loadData().sort((a,b)=>{
+    if(tableSortDesc) return b.date>a.date?1:-1;
+    return a.date>b.date?1:-1;
+  });
+  const tbody=document.getElementById('shiftTableBody');
+  if(!data.length){tbody.innerHTML='<tr><td colspan="18" style="text-align:center;color:var(--text3);padding:20px">No shift data yet. Click "+ Log Shift" to add your first entry.</td></tr>';return;}
+  tbody.innerHTML=data.map(d=>renderRow(d)).join('');
+}
+
+function renderRow(d,editing=false){
+  const st=getStatus(d.end);
+  const occ=((d.end/CAP)*100).toFixed(0);
+  const net=netBalance(d);
+  const netColor=net>0?'#ef4444':net<0?'#22c55e':'#8b90a0';
+  if(editing){
+    const calcEnd=Math.max(0,(d.start||0)+(d.admits||0)-(d.expDCs||0));
+    const ik=(f,v,extra='')=>`<input class="inline-input" id="ei-${f}" type="number" min="0" value="${v||0}" ${extra} onkeydown="if(event.key==='Enter')saveInline('${d.date}');if(event.key==='Escape')cancelInline()">`;
+    return`<tr class="row-editing" id="row-${d.date}">
+      <td style="color:var(--blue);font-family:'DM Mono',monospace;font-size:12px">${fmtDate(d.date)}</td>
+      <td>${ik('start',d.start,'oninput="liveCalcEnd()"')}</td>
+      <td style="color:var(--teal);font-weight:600;font-size:13px;font-family:\'DM Mono\',monospace" id="ei-end-display">${calcEnd}</td>
+      <td style="color:var(--teal);font-weight:600;font-size:13px;font-family:\'DM Mono\',monospace" id="ei-admits-display">${d.admits||0}</td>
+      <td>${ik('ed',d.ed,'oninput="liveCalcEnd()"')}</td><td>${ik('direct',d.direct,'oninput="liveCalcEnd()"')}</td><td>${ik('transfers',d.transfers,'oninput="liveCalcEnd()"')}</td>
+      <td>${ik('or',d.or,'oninput="liveCalcEnd()"')}</td><td>${ik('cl',d.cl,'oninput="liveCalcEnd()"')}</td><td>${ik('ep',d.ep,'oninput="liveCalcEnd()"')}</td>
+      <td>${ik('expDCs',d.expDCs,'oninput="liveCalcEnd()"')}</td>
+      <td style="font-weight:500;font-size:12px;font-family:\'DM Mono\',monospace" id="ei-net-display">${net>0?'+':''}${net}</td>
+      <td>${ik('orVol',d.orVol)}</td><td>${ik('clVol',d.clVol)}</td><td>${ik('epVol',d.epVol)}</td><td>${ik('niVol',d.niVol)}</td>
+      <td><span class="status-badge" style="background:${SC(st)}22;color:${SC(st)}" id="ei-status-display">${st} ${occ}%</span></td>
+      <td><div class="row-actions"><button class="save-row-btn" onclick="saveInline('${d.date}')">Save</button><button class="cancel-row-btn" onclick="cancelInline()">Cancel</button></div></td>
+    </tr>`;
+  }
+  return`<tr class="editable-row" id="row-${d.date}" onclick="startEdit('${d.date}')">
+    <td style="font-family:'DM Mono',monospace;font-size:12px">${fmtDate(d.date)}</td>
+    <td>${d.start||0}</td>
+    <td style="color:var(--teal);font-weight:500">${d.end||0}</td>
+    <td>${d.admits||0}</td>
+    <td>${d.ed||0}</td><td>${d.direct||0}</td><td>${d.transfers||0}</td>
+    <td>${d.or||0}</td><td>${d.cl||0}</td><td>${d.ep||0}</td>
+    <td>${d.expDCs||0}</td>
+    <td style="color:${netColor};font-weight:500">${net>0?'+':''}${net}</td>
+    <td>${d.orVol||0}</td><td>${d.clVol||0}</td><td>${d.epVol||0}</td><td>${d.niVol||0}</td>
+    <td><span class="status-badge" style="background:${SC(st)}22;color:${SC(st)}">${st} ${occ}%</span></td>
+    <td><button class="del-btn" onclick="event.stopPropagation();deleteEntry('${d.date}')">✕</button></td>
+  </tr>`;
+}
+
+function liveCalcEnd(){
+  const start=parseInt(document.getElementById('ei-start')?.value)||0;
+  const expDCs=parseInt(document.getElementById('ei-expDCs')?.value)||0;
+  const ed=parseInt(document.getElementById('ei-ed')?.value)||0;
+  const direct=parseInt(document.getElementById('ei-direct')?.value)||0;
+  const transfers=parseInt(document.getElementById('ei-transfers')?.value)||0;
+  const or=parseInt(document.getElementById('ei-or')?.value)||0;
+  const cl=parseInt(document.getElementById('ei-cl')?.value)||0;
+  const ep=parseInt(document.getElementById('ei-ep')?.value)||0;
+  const admits=ed+direct+transfers+or+cl+ep;
+  const end=Math.max(0,start+admits-expDCs);
+  const net=admits-expDCs;
+  const netColor=net>0?'#ef4444':net<0?'#22c55e':'#8b90a0';
+
+  // Update inline row displays
+  const endEl=document.getElementById('ei-end-display');
+  const admEl=document.getElementById('ei-admits-display');
+  const netEl=document.getElementById('ei-net-display');
+  const stEl=document.getElementById('ei-status-display');
+  if(endEl){const oc=end>=CAP*.95?'#ef4444':end>=CAP*.9?'#f97316':end>=CAP*.8?'#f59e0b':'#22c55e';endEl.textContent=end;endEl.style.color=oc;}
+  if(admEl){admEl.textContent=admits;admEl.style.color='var(--teal)';}
+  if(netEl){netEl.textContent=(net>0?'+':'')+net;netEl.style.color=netColor;}
+  if(stEl){const st=getStatus(end);const occ=((end/CAP)*100).toFixed(0);stEl.textContent=`${st} ${occ}%`;stEl.style.color=SC(st);stEl.style.background=SC(st)+'22';}
+
+  // Live update KPI cards and chart with preview data
+  if(!editingDate) return;
+  const allData=loadData().sort((a,b)=>a.date>b.date?1:-1);
+  const previewData=allData.map(r=>r.date===editingDate?{...r,start,end,admits,expDCs,ed,direct,transfers,or,cl,ep}:r);
+
+  // Update KPI cards live if this is the selected date
+  const viewDate=selectedDate||previewData[previewData.length-1].date;
+  if(editingDate===viewDate){
+    const preview={...previewData.find(r=>r.date===editingDate)};
+    updateKPI(preview, previewData);
+  }
+
+  // Rebuild chart with preview values
+  const all=previewData;
+  let startIdx=0;
+  if(selectedDate){
+    const idx=all.findIndex(r=>r.date===selectedDate);
+    startIdx=idx>=0?idx:0;
+  } else {
+    startIdx=Math.max(0,all.length-currentDays);
+  }
+  buildCensus(all.slice(startIdx,startIdx+currentDays), all);
+}
+
+function startEdit(date){
+  if(editingDate===date)return;
+  if(editingDate)cancelInline();
+  editingDate=date;
+  const data=loadData();
+  const d=data.find(r=>r.date===date);
+  if(!d)return;
+  const row=document.getElementById('row-'+date);
+  if(row)row.outerHTML=renderRow(d,true);
+  setTimeout(()=>{const el=document.getElementById('ei-start');if(el)el.focus();},50);
+}
+
+function saveInline(date){
+  const data=loadData();
+  const idx=data.findIndex(d=>d.date===date);
+  if(idx===-1)return;
+  const g=id=>{const el=document.getElementById('ei-'+id);return el?parseInt(el.value)||0:0;};
+  const start=g('start'),expDCs=g('expDCs');
+  const ed=g('ed'),direct=g('direct'),transfers=g('transfers'),or=g('or'),cl=g('cl'),ep=g('ep');
+  const admits=ed+direct+transfers+or+cl+ep;
+  const end=Math.max(0,start+admits-expDCs);
+  data[idx]={...data[idx],start,end,admits,expDCs,ed,direct,transfers,or,cl,ep,orVol:g('orVol'),clVol:g('clVol'),epVol:g('epVol'),niVol:g('niVol')};
+
+  // Cascade: propagate End Census forward through ALL subsequent days
+  const sorted=data.sort((a,b)=>a.date>b.date?1:-1);
+  const thisIdx=sorted.findIndex(d=>d.date===date);
+  let prevEnd=end;
+  for(let i=thisIdx+1;i<sorted.length;i++){
+    sorted[i].start=prevEnd;
+    sorted[i].end=Math.max(0,prevEnd+(sorted[i].admits||0)-(sorted[i].expDCs||0));
+    prevEnd=sorted[i].end;
+  }
+
+  saveData(sorted);
+  editingDate=null;
+  renderTable();
+  buildAll(currentDays);
+  initDatePicker();
+}
+
+function cancelInline(){
+  if(!editingDate)return;
+  const data=loadData();
+  const d=data.find(r=>r.date===editingDate);
+  const row=document.getElementById('row-'+editingDate);
+  if(row&&d)row.outerHTML=renderRow(d,false);
+  editingDate=null;
+}
+
+function deleteEntry(date){
+  if(!confirm(`Delete entry for ${fmtDate(date)}?`))return;
+  const data=loadData().filter(d=>d.date!==date);
+  saveData(data);
+  editingDate=null;
+  renderTable();
+  buildAll(currentDays);
+  initDatePicker();
+}
+
+// ── PANEL ─────────────────────────────────────────────────────────────────────
+function openPanel(){
+  // Set default date to tomorrow if data exists, otherwise today
+  const data=loadData().sort((a,b)=>a.date>b.date?1:-1);
+  const latest=data[data.length-1];
+  let defaultDate=new Date().toISOString().split('T')[0];
+  if(latest){
+    // suggest next calendar day after latest entry
+    const d=new Date(latest.date+'T00:00:00');
+    d.setDate(d.getDate()+1);
+    defaultDate=d.toISOString().split('T')[0];
+  }
+  document.getElementById('fDate').value=defaultDate;
+
+  // Auto-fill Start from previous day's End
+  const hint=document.getElementById('fStartHint');
+  if(latest){
+    document.getElementById('fStart').value=latest.end;
+    hint.textContent=`← auto-filled from ${fmtDate(latest.date)} end (${latest.end})`;
+  } else {
+    document.getElementById('fStart').value='';
+    hint.textContent='';
+  }
+
+  // Clear other fields
+  ['fExpDCs','fED','fDirect','fTransfers','fOR','fCL','fEP','fORvol','fCLvol','fEPvol','fNIvol'].forEach(id=>document.getElementById(id).value='');
+  updatePreview();
+  document.getElementById('entryPanel').classList.add('open');
+}
+function closePanel(){document.getElementById('entryPanel').classList.remove('open');}
+
+function calcSources(){
+  return ['fED','fDirect','fTransfers','fOR','fCL','fEP']
+    .reduce((s,id)=>s+(parseInt(document.getElementById(id).value)||0),0);
+}
+
+function calcEndCensus(){
+  const start=parseInt(document.getElementById('fStart').value)||0;
+  const admits=calcSources();
+  const dcs=parseInt(document.getElementById('fExpDCs').value)||0;
+  return Math.max(0, start+admits-dcs);
+}
+
+function updatePreview(){
+  const start=parseInt(document.getElementById('fStart').value)||0;
+  const dcs=parseInt(document.getElementById('fExpDCs').value)||0;
+  const admits=calcSources();
+  const end=Math.max(0,start+admits-dcs);
+  const net=admits-dcs;
+
+  // Update Total Admits display
+  const admDisplay=document.getElementById('fAdmitsDisplay');
+  const admFormula=document.getElementById('fAdmitsFormula');
+  const admInput=document.getElementById('fAdmits');
+  const srcLabels=['ED','Dir','Xfer','OR','CL','EP'];
+  const srcVals=['fED','fDirect','fTransfers','fOR','fCL','fEP'].map(id=>parseInt(document.getElementById(id).value)||0);
+  if(admits>0){
+    admDisplay.textContent=admits;
+    admDisplay.style.color='var(--teal)';
+    admFormula.textContent=srcLabels.filter((_,i)=>srcVals[i]>0).map((l,i)=>`${srcVals.filter(v=>v>0)[i]}${srcLabels.filter((_,j)=>srcVals[j]>0)[i]}`).join('+') || admits;
+  } else {
+    admDisplay.textContent='0';
+    admFormula.textContent='no sources yet';
+  }
+  admInput.value=admits;
+
+  // Update End Census display
+  const display=document.getElementById('fEndDisplay');
+  const formula=document.getElementById('fEndFormula');
+  const endInput=document.getElementById('fEnd');
+  if(start||admits||dcs){
+    display.textContent=end;
+    formula.textContent=`${start}+${admits}−${dcs}`;
+    const oc=end>=CAP*.95?'#ef4444':end>=CAP*.9?'#f97316':end>=CAP*.8?'#f59e0b':'#22c55e';
+    display.style.color=oc;
+    display.closest('div').style.borderColor=oc;
+  } else {
+    display.textContent='—';
+    formula.textContent='';
+    display.style.color='var(--teal)';
+    display.closest('div').style.borderColor='var(--teal)';
+  }
+  endInput.value=end||'';
+
+  // Status preview
+  const dot=document.getElementById('spDot');
+  const txt=document.getElementById('spText');
+  if(!start&&!admits){dot.style.background='var(--text3)';txt.style.color='var(--text3)';txt.textContent='Enter census values to preview';return;}
+  const st=getStatus(end);
+  const c=SC(st);
+  const occ=((end/CAP)*100).toFixed(1);
+  dot.style.background=c;txt.style.color=c;
+  txt.textContent=`${st} · ${occ}% · Net: ${net>0?'+':''}${net} · End census: ${end}/${CAP}`;
+}
+
+function saveEntry(){
+  const date=document.getElementById('fDate').value;
+  const start=parseInt(document.getElementById('fStart').value);
+  if(!date||isNaN(start)){alert('Date and Start Census are required.');return;}
+  const expDCs=parseInt(document.getElementById('fExpDCs').value)||0;
+  const admits=calcSources();
+  const end=Math.max(0,start+admits-expDCs);
+  const g=id=>parseInt(document.getElementById(id).value)||0;
+  const entry={date,start,end,admits,expDCs,ed:g('fED'),direct:g('fDirect'),transfers:g('fTransfers'),or:g('fOR'),cl:g('fCL'),ep:g('fEP'),orVol:g('fORvol'),clVol:g('fCLvol'),epVol:g('fEPvol'),niVol:g('fNIvol')};
+  const data=loadData().filter(d=>d.date!==date);
+  data.push(entry);
+  const sorted=data.sort((a,b)=>a.date>b.date?1:-1);
+
+  // Cascade: propagate End Census forward through ALL subsequent days
+  const thisIdx=sorted.findIndex(d=>d.date===date);
+  let prevEnd=end;
+  for(let i=thisIdx+1;i<sorted.length;i++){
+    sorted[i].start=prevEnd;
+    sorted[i].end=Math.max(0,prevEnd+(sorted[i].admits||0)-(sorted[i].expDCs||0));
+    prevEnd=sorted[i].end;
+  }
+
+  saveData(sorted);
+  closePanel();
+  renderTable();
+  buildAll(currentDays);
+  initDatePicker();
+}
+
+// ── TABS / FILTERS ────────────────────────────────────────────────────────────
+let currentDays=7;
+function setDays(n,btn){
+  currentDays=n;
+  document.querySelectorAll('.fbtn').forEach(b=>b.classList.remove('on'));
+  btn.classList.add('on');
+  buildAll(n);
+}
+function showTab(id,btn){
+  document.querySelectorAll('.tab').forEach(b=>b.classList.remove('on'));
+  document.querySelectorAll('.tab-content').forEach(c=>c.classList.remove('on'));
+  btn.classList.add('on');
+  document.getElementById('tab-'+id).classList.add('on');
+  if(id==='data')renderTable();
+}
+
+// ── INIT ──────────────────────────────────────────────────────────────────────
+// Register datalabels plugin for census chart only
+if(window.ChartDataLabels) Chart.register(ChartDataLabels);
+initDatePicker();
+buildAll(7);
+</script>
+</body>
+</html>
