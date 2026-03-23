@@ -168,6 +168,10 @@
   </div>
   <div class="hdr-right">
     <div class="live-badge"><div class="live-dot"></div>LIVE</div>
+    <div class="live-badge" style="gap:5px">
+      <div id="connDot" style="width:6px;height:6px;border-radius:50%;background:#f59e0b"></div>
+      <span id="connLabel" style="color:#f59e0b;font-size:11px;font-family:'DM Mono',monospace">Connecting...</span>
+    </div>
     <button class="btn btn-primary btn-sm" onclick="openPanel()">+ Log Shift</button>
   </div>
 </div>
@@ -509,17 +513,17 @@ const SEED=[
   {date:'2026-03-19',start:20,end:18,admits:2, expDCs:4, ed:1,direct:0,transfers:0,or:1,cl:0,ep:0,orVol:0,clVol:0,epVol:0,niVol:0},
   {date:'2026-03-20',start:18,end:16,admits:3, expDCs:5, ed:0,direct:1,transfers:2,or:0,cl:0,ep:0,orVol:0,clVol:0,epVol:0,niVol:0},
   {date:'2026-03-21',start:16,end:14,admits:3, expDCs:5, ed:2,direct:0,transfers:0,or:1,cl:0,ep:0,orVol:0,clVol:0,epVol:0,niVol:0},
-  {date:'2026-03-22',start:14,end:14,admits:1, expDCs:1, ed:0,direct:1,transfers:0,or:0,cl:0,ep:0,orVol:0,clVol:0,epVol:0,niVol:0},
-  {date:'2026-03-23',start:14,end:13,admits:3, expDCs:4, ed:0,direct:1,transfers:0,or:2,cl:0,ep:0,orVol:4,clVol:8,epVol:5,niVol:1},
-  {date:'2026-03-24',start:13,end:12,admits:2, expDCs:3, ed:0,direct:0,transfers:1,or:0,cl:1,ep:0,orVol:3,clVol:8,epVol:7,niVol:1},
-  {date:'2026-03-25',start:12,end:9, admits:2, expDCs:5, ed:0,direct:0,transfers:1,or:0,cl:1,ep:0,orVol:1,clVol:6,epVol:3,niVol:3},
+  {date:'2026-03-22',start:14,end:18,admits:4, expDCs:0, ed:3,direct:1,transfers:0,or:0,cl:0,ep:0,orVol:0,clVol:0,epVol:0,niVol:0},
+  {date:'2026-03-23',start:18,end:15,admits:2, expDCs:5, ed:0,direct:0,transfers:0,or:2,cl:0,ep:0,orVol:5,clVol:11,epVol:6,niVol:4},
+  {date:'2026-03-24',start:15,end:12,admits:1, expDCs:4, ed:0,direct:0,transfers:0,or:1,cl:0,ep:0,orVol:3,clVol:7,epVol:7,niVol:8},
+  {date:'2026-03-25',start:12,end:9, admits:2, expDCs:5, ed:0,direct:0,transfers:1,or:0,cl:1,ep:0,orVol:1,clVol:4,epVol:7,niVol:7},
   {date:'2026-03-26',start:9, end:11,admits:2, expDCs:0, ed:0,direct:0,transfers:0,or:2,cl:0,ep:0,orVol:2,clVol:1,epVol:8,niVol:7},
   {date:'2026-03-27',start:11,end:13,admits:2, expDCs:0, ed:0,direct:0,transfers:0,or:2,cl:0,ep:0,orVol:2,clVol:5,epVol:10,niVol:4},
-  {date:'2026-03-28',start:13,end:11,admits:0, expDCs:2, ed:0,direct:0,transfers:0,or:0,cl:0,ep:0,orVol:0,clVol:0,epVol:0,niVol:0},
-  {date:'2026-03-29',start:11,end:11,admits:0, expDCs:0, ed:0,direct:0,transfers:0,or:0,cl:0,ep:0,orVol:0,clVol:0,epVol:0,niVol:0},
-  {date:'2026-03-30',start:11,end:12,admits:1, expDCs:0, ed:0,direct:0,transfers:0,or:1,cl:0,ep:0,orVol:0,clVol:0,epVol:0,niVol:0},
-  {date:'2026-03-31',start:12,end:15,admits:3, expDCs:0, ed:0,direct:0,transfers:1,or:2,cl:0,ep:0,orVol:0,clVol:0,epVol:0,niVol:0},
-  {date:'2026-04-01',start:15,end:17,admits:2, expDCs:0, ed:0,direct:0,transfers:0,or:1,cl:0,ep:1,orVol:0,clVol:0,epVol:0,niVol:0},
+  {date:'2026-03-28',start:13,end:10,admits:0, expDCs:3, ed:0,direct:0,transfers:0,or:0,cl:0,ep:0,orVol:0,clVol:0,epVol:0,niVol:0},
+  {date:'2026-03-29',start:10,end:10,admits:0, expDCs:0, ed:0,direct:0,transfers:0,or:0,cl:0,ep:0,orVol:0,clVol:0,epVol:0,niVol:0},
+  {date:'2026-03-30',start:10,end:11,admits:1, expDCs:0, ed:0,direct:0,transfers:0,or:1,cl:0,ep:0,orVol:1,clVol:6,epVol:5,niVol:3},
+  {date:'2026-03-31',start:11,end:13,admits:2, expDCs:0, ed:0,direct:0,transfers:0,or:2,cl:0,ep:0,orVol:2,clVol:4,epVol:0,niVol:1},
+  {date:'2026-04-01',start:13,end:14,admits:1, expDCs:0, ed:0,direct:0,transfers:0,or:1,cl:0,ep:0,orVol:1,clVol:4,epVol:5,niVol:2},
 ];
 
 const CAP=22, ALERT_LINE=19.8;
@@ -527,8 +531,155 @@ const SC=s=>({OK:'#22c55e',WATCH:'#f59e0b',ALERT:'#f97316',HIGH:'#ef4444'}[s]||'
 const GC='rgba(0,0,0,0.06)';
 const TS={color:'#6b7280',font:{size:10,family:"'DM Mono',monospace"}};
 
+// ── SHAREPOINT CONFIG ─────────────────────────────────────────────────────────
+const SP_SITE='https://bswhealth.sharepoint.com/sites/THHBDStaffingTeam';
+const SP_LIST='CensusDashboard';
+const SP_API=`${SP_SITE}/_api/web/lists/getbytitle('${SP_LIST}')`;
+let spConnected=false;
+let spItems={}; // map date -> SharePoint item ID for updates
+
 // ── STORAGE ──────────────────────────────────────────────────────────────────
-const DATA_KEY='cvicu_census_v5'; // bumped version forces fresh seed load
+const DATA_KEY='cvicu_census_v6';
+
+function setConnectionStatus(connected, msg=''){
+  spConnected=connected;
+  const dot=document.getElementById('connDot');
+  const lbl=document.getElementById('connLabel');
+  if(!dot||!lbl)return;
+  if(connected){
+    dot.style.background='#16a34a';
+    lbl.textContent='SharePoint';
+    lbl.style.color='#16a34a';
+  } else {
+    dot.style.background='#f59e0b';
+    lbl.textContent=msg||'Local only';
+    lbl.style.color='#f59e0b';
+  }
+}
+
+// Map SharePoint item to our internal format
+function spItemToRow(item){
+  return {
+    _spId: item.ID,
+    date: item.Date ? item.Date.split('T')[0] : '',
+    start: item.StartCensus||0,
+    end: item.EndCensus||0,
+    admits: item.TotalAdmits||0,
+    expDCs: item.ExpDCs||0,
+    ed: item.ED||0,
+    direct: item.DirectAdmit||0,
+    transfers: item.Transfers||0,
+    or: item.OR_Admits||0,
+    cl: item.CL_Admits||0,
+    ep: item.EP_Admits||0,
+    orVol: item.OR_Cases||0,
+    clVol: item.CL_Cases||0,
+    epVol: item.EP_Cases||0,
+    niVol: item.NI_Cases||0,
+  };
+}
+
+// Map our internal format to SharePoint fields
+function rowToSpFields(d){
+  return {
+    __metadata:{type:`SP.Data.${SP_LIST}ListItem`},
+    Date: d.date,
+    StartCensus: d.start||0,
+    EndCensus: d.end||0,
+    TotalAdmits: d.admits||0,
+    ExpDCs: d.expDCs||0,
+    ED: d.ed||0,
+    DirectAdmit: d.direct||0,
+    Transfers: d.transfers||0,
+    OR_Admits: d.or||0,
+    CL_Admits: d.cl||0,
+    EP_Admits: d.ep||0,
+    NetBalance: (d.admits||0)-(d.expDCs||0),
+    OR_Cases: d.orVol||0,
+    CL_Cases: d.clVol||0,
+    EP_Cases: d.epVol||0,
+    NI_Cases: d.niVol||0,
+    Status: getStatus(d.end||0),
+    Occupancy_Pct: parseFloat(((d.end||0)/CAP*100).toFixed(1)),
+    HospitalCapacity: CAP,
+    AlertThreshold: ALERT_LINE
+  };
+}
+
+async function getDigest(){
+  const r=await fetch(`${SP_SITE}/_api/contextinfo`,{
+    method:'POST',credentials:'include',
+    headers:{'Accept':'application/json;odata=verbose','Content-Type':'application/json;odata=verbose'}
+  });
+  const j=await r.json();
+  return j.d.GetContextWebInformation.FormDigestValue;
+}
+
+async function spFetchAll(){
+  try{
+    const r=await fetch(
+      `${SP_API}/items?$select=ID,Date,StartCensus,EndCensus,TotalAdmits,ED,DirectAdmit,Transfers,OR_Admits,CL_Admits,EP_Admits,ExpDCs,OR_Cases,CL_Cases,EP_Cases,NI_Cases&$orderby=Date%20asc&$top=500`,
+      {credentials:'include',headers:{'Accept':'application/json;odata=verbose'}}
+    );
+    if(!r.ok)throw new Error('SP fetch failed');
+    const j=await r.json();
+    const rows=j.d.results.map(spItemToRow).filter(r=>r.date);
+    // Build ID map
+    spItems={};
+    rows.forEach(r=>{if(r._spId)spItems[r.date]=r._spId;});
+    setConnectionStatus(true);
+    // Save to localStorage as backup
+    localStorage.setItem(DATA_KEY,JSON.stringify(rows));
+    return rows;
+  }catch(e){
+    setConnectionStatus(false,'Local only');
+    return null;
+  }
+}
+
+async function spAddItem(d){
+  try{
+    const digest=await getDigest();
+    const r=await fetch(`${SP_API}/items`,{
+      method:'POST',credentials:'include',
+      headers:{'Accept':'application/json;odata=verbose','Content-Type':'application/json;odata=verbose','X-RequestDigest':digest},
+      body:JSON.stringify(rowToSpFields(d))
+    });
+    if(!r.ok)throw new Error('SP add failed');
+    const j=await r.json();
+    spItems[d.date]=j.d.ID;
+    return true;
+  }catch(e){console.error('SP add error:',e);return false;}
+}
+
+async function spUpdateItem(d){
+  const id=spItems[d.date];
+  if(!id)return spAddItem(d);
+  try{
+    const digest=await getDigest();
+    const r=await fetch(`${SP_API}/items(${id})`,{
+      method:'POST',credentials:'include',
+      headers:{'Accept':'application/json;odata=verbose','Content-Type':'application/json;odata=verbose',
+               'X-RequestDigest':digest,'X-HTTP-Method':'MERGE','IF-MATCH':'*'},
+      body:JSON.stringify(rowToSpFields(d))
+    });
+    return r.ok||r.status===204;
+  }catch(e){console.error('SP update error:',e);return false;}
+}
+
+async function spDeleteItem(date){
+  const id=spItems[date];
+  if(!id)return true;
+  try{
+    const digest=await getDigest();
+    const r=await fetch(`${SP_API}/items(${id})`,{
+      method:'POST',credentials:'include',
+      headers:{'Accept':'application/json;odata=verbose','X-RequestDigest':digest,'X-HTTP-Method':'DELETE','IF-MATCH':'*'}
+    });
+    if(r.ok||r.status===204){delete spItems[date];return true;}
+    return false;
+  }catch(e){console.error('SP delete error:',e);return false;}
+}
 
 function loadData(){
   try{const s=localStorage.getItem(DATA_KEY);if(s){const d=JSON.parse(s);if(d&&d.length>0)return d;}}catch(e){}
@@ -1203,6 +1354,15 @@ function saveInline(date){
   }
 
   saveData(sorted);
+
+  // Write to SharePoint
+  if(spConnected){
+    spUpdateItem(sorted[thisIdx]).then(ok=>{
+      if(!ok) setConnectionStatus(false,'Save failed');
+      for(let i=thisIdx+1;i<sorted.length;i++) spUpdateItem(sorted[i]);
+    });
+  }
+
   editingDate=null;
   renderTable();
   buildAll(currentDays);
@@ -1222,6 +1382,7 @@ function deleteEntry(date){
   if(!confirm(`Delete entry for ${fmtDate(date)}?`))return;
   const data=loadData().filter(d=>d.date!==date);
   saveData(data);
+  if(spConnected) spDeleteItem(date);
   editingDate=null;
   renderTable();
   buildAll(currentDays);
@@ -1346,6 +1507,16 @@ function saveEntry(){
   }
 
   saveData(sorted);
+
+  // Write to SharePoint
+  if(spConnected){
+    spUpdateItem(entry).then(ok=>{
+      if(!ok) setConnectionStatus(false,'Save failed');
+      // Also cascade updates to SharePoint for subsequent days
+      for(let i=thisIdx+1;i<sorted.length;i++) spUpdateItem(sorted[i]);
+    });
+  }
+
   closePanel();
   renderTable();
   buildAll(currentDays);
@@ -1369,10 +1540,16 @@ function showTab(id,btn){
 }
 
 // ── INIT ──────────────────────────────────────────────────────────────────────
-// Register datalabels plugin for census chart only
 if(window.ChartDataLabels) Chart.register(ChartDataLabels);
-initDatePicker();
-buildAll(7);
+
+// Try SharePoint first, fall back to localStorage
+spFetchAll().then(spData=>{
+  if(spData&&spData.length>0){
+    saveData(spData);
+  }
+  initDatePicker();
+  buildAll(7);
+});
 </script>
 </body>
 </html>
