@@ -514,16 +514,16 @@ const SEED=[
   {date:'2026-03-20',start:18,end:16,admits:3, expDCs:5, ed:0,direct:1,transfers:2,or:0,cl:0,ep:0,orVol:0,clVol:0,epVol:0,niVol:0},
   {date:'2026-03-21',start:16,end:14,admits:3, expDCs:5, ed:2,direct:0,transfers:0,or:1,cl:0,ep:0,orVol:0,clVol:0,epVol:0,niVol:0},
   {date:'2026-03-22',start:14,end:18,admits:4, expDCs:0, ed:3,direct:1,transfers:0,or:0,cl:0,ep:0,orVol:0,clVol:0,epVol:0,niVol:0},
-  {date:'2026-03-23',start:18,end:15,admits:2, expDCs:5, ed:0,direct:0,transfers:0,or:2,cl:0,ep:0,orVol:5,clVol:11,epVol:6,niVol:4},
-  {date:'2026-03-24',start:15,end:12,admits:1, expDCs:4, ed:0,direct:0,transfers:0,or:1,cl:0,ep:0,orVol:3,clVol:7,epVol:7,niVol:8},
-  {date:'2026-03-25',start:12,end:9, admits:2, expDCs:5, ed:0,direct:0,transfers:1,or:0,cl:1,ep:0,orVol:1,clVol:4,epVol:7,niVol:7},
-  {date:'2026-03-26',start:9, end:11,admits:2, expDCs:0, ed:0,direct:0,transfers:0,or:2,cl:0,ep:0,orVol:2,clVol:1,epVol:8,niVol:7},
-  {date:'2026-03-27',start:11,end:13,admits:2, expDCs:0, ed:0,direct:0,transfers:0,or:2,cl:0,ep:0,orVol:2,clVol:5,epVol:10,niVol:4},
-  {date:'2026-03-28',start:13,end:10,admits:0, expDCs:3, ed:0,direct:0,transfers:0,or:0,cl:0,ep:0,orVol:0,clVol:0,epVol:0,niVol:0},
-  {date:'2026-03-29',start:10,end:10,admits:0, expDCs:0, ed:0,direct:0,transfers:0,or:0,cl:0,ep:0,orVol:0,clVol:0,epVol:0,niVol:0},
-  {date:'2026-03-30',start:10,end:11,admits:1, expDCs:0, ed:0,direct:0,transfers:0,or:1,cl:0,ep:0,orVol:1,clVol:6,epVol:5,niVol:3},
-  {date:'2026-03-31',start:11,end:13,admits:2, expDCs:0, ed:0,direct:0,transfers:0,or:2,cl:0,ep:0,orVol:2,clVol:4,epVol:0,niVol:1},
-  {date:'2026-04-01',start:13,end:14,admits:1, expDCs:0, ed:0,direct:0,transfers:0,or:1,cl:0,ep:0,orVol:1,clVol:4,epVol:5,niVol:2},
+  {date:'2026-03-23',start:18,end:20,admits:9, expDCs:7, ed:6,direct:0,transfers:0,or:2,cl:0,ep:1,orVol:5,clVol:11,epVol:6,niVol:4},
+  {date:'2026-03-24',start:20,end:18,admits:2, expDCs:4, ed:0,direct:0,transfers:1,or:1,cl:0,ep:0,orVol:2,clVol:7,epVol:7,niVol:8},
+  {date:'2026-03-25',start:18,end:11,admits:1, expDCs:8, ed:0,direct:0,transfers:0,or:1,cl:0,ep:0,orVol:2,clVol:4,epVol:7,niVol:7},
+  {date:'2026-03-26',start:11,end:10,admits:2, expDCs:3, ed:0,direct:0,transfers:0,or:2,cl:0,ep:0,orVol:2,clVol:1,epVol:8,niVol:7},
+  {date:'2026-03-27',start:10,end:12,admits:2, expDCs:0, ed:0,direct:0,transfers:0,or:2,cl:0,ep:0,orVol:2,clVol:5,epVol:10,niVol:4},
+  {date:'2026-03-28',start:12,end:9, admits:0, expDCs:3, ed:0,direct:0,transfers:0,or:0,cl:0,ep:0,orVol:0,clVol:0,epVol:0,niVol:0},
+  {date:'2026-03-29',start:9, end:9, admits:0, expDCs:0, ed:0,direct:0,transfers:0,or:0,cl:0,ep:0,orVol:0,clVol:0,epVol:0,niVol:0},
+  {date:'2026-03-30',start:9, end:10,admits:1, expDCs:0, ed:0,direct:0,transfers:0,or:1,cl:0,ep:0,orVol:1,clVol:6,epVol:5,niVol:3},
+  {date:'2026-03-31',start:10,end:12,admits:2, expDCs:0, ed:0,direct:0,transfers:0,or:2,cl:0,ep:0,orVol:2,clVol:4,epVol:0,niVol:1},
+  {date:'2026-04-01',start:12,end:13,admits:1, expDCs:0, ed:0,direct:0,transfers:0,or:1,cl:0,ep:0,orVol:1,clVol:4,epVol:5,niVol:2},
 ];
 
 const CAP=22, ALERT_LINE=19.8;
@@ -539,7 +539,7 @@ let spConnected=false;
 let spItems={}; // map date -> SharePoint item ID for updates
 
 // ── STORAGE ──────────────────────────────────────────────────────────────────
-const DATA_KEY='cvicu_census_v6';
+const DATA_KEY='cvicu_census_v7';
 
 function setConnectionStatus(connected, msg=''){
   spConnected=connected;
