@@ -1,0 +1,5 @@
+{
+  "generatedAt": "2026-09-08T10:24:00-05:00",
+  "hospital": { "currentCensus": 42, "physicalBeds": 46, "staffedBeds": 44 },
+  "unit1E": { "currentCensus": 18, "physicalBeds": 22, "staffedBeds": 20 }
+}
